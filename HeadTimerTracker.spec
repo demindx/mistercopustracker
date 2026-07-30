@@ -1,10 +1,9 @@
 # -*- mode: python ; coding: utf-8 -*-
 from pathlib import Path
-import mediapipe, nicegui, opencv
+import mediapipe, nicegui
 
 _mp_dir = Path(mediapipe.__file__).parent
 _ng_dir = Path(nicegui.__file__).parent
-_cv_dir = Path(opencv.__file__).parent
 
 datas = [
     ("config.example.json", "."),
@@ -21,7 +20,7 @@ if _mp_bin.exists():
             datas.append((str(f), str(f.relative_to(_mp_dir.parent))))
 
 # bundle model if cached
-_model_dir = Path(__file__).resolve().parent / "models"
+_model_dir = Path(SPECPATH) / "models"
 _model_file = _model_dir / "face_landmarker.task"
 if _model_file.exists():
     datas.append((str(_model_file), "models"))
