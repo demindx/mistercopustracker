@@ -429,11 +429,23 @@ class HeadTimerUI:
 
     def run(self, host: str = "127.0.0.1", port: int = 8080, show: bool = True):
         log.info("Starting NiceGUI server on %s:%s", host, port)
+
+        if getattr(sys, "frozen", False):
+            icon_dir = Path(sys._MEIPASS)
+        else:
+            icon_dir = Path(__file__).resolve().parent.parent
+
+        icon_path = icon_dir / "icon.png"
+        favicon = "🎯"
+        if icon_path.exists():
+            app.add_static_files("/icon", str(icon_dir))
+            favicon = "/icon/icon.png"
+
         ui.run(
             host=host,
             port=port,
             title="MisterTimer",
             reload=False,
             show=show,
-            favicon="🎯",
+            favicon=favicon,
         )

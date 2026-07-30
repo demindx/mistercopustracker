@@ -7,6 +7,18 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+if getattr(sys, "frozen", False):
+    _mp_dll_dir = Path(sys._MEIPASS) / "mediapipe" / "tasks" / "c"
+    if _mp_dll_dir.is_dir():
+        try:
+            os.add_dll_directory(str(_mp_dll_dir))
+        except Exception:
+            pass
+    try:
+        os.add_dll_directory(str(Path(sys._MEIPASS)))
+    except Exception:
+        pass
+
 from src.logger import setup_logging
 from ui.app import HeadTimerUI
 

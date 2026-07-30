@@ -12,9 +12,25 @@ datas = [
     (str(_ng_dir / "elements"), "nicegui/elements"),
 ]
 
-_icon_path = Path(SPECPATH) / "icon.png"
-if _icon_path.exists():
-    datas.append((str(_icon_path), "."))
+_icon_png = Path(SPECPATH) / "icon.png"
+_icon_ico = Path(SPECPATH) / "icon.ico"
+
+if _icon_png.exists():
+    datas.append((str(_icon_png), "."))
+
+if not _icon_ico.exists() and _icon_png.exists():
+    try:
+        from PIL import Image
+        img = Image.open(_icon_png)
+        img.save(
+            _icon_ico, format="ICO",
+            sizes=[(256, 256), (128, 128), (64, 64), (48, 48), (32, 32), (16, 16)],
+        )
+    except Exception:
+        pass
+
+if _icon_ico.exists():
+    datas.append((str(_icon_ico), "."))
 
 _mp_bin = _mp_dir / "tasks" / "c"
 _mp_binaries = []
@@ -83,6 +99,8 @@ a = Analysis(
 )
 pyz = PYZ(a.pure)
 
+exe_icon = str(_icon_ico) if _icon_ico.exists() else None
+
 exe = EXE(
     pyz,
     a.scripts,
@@ -99,6 +117,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon=exe_icon,
 )
 coll = COLLECT(
     exe,
@@ -106,6 +125,6 @@ coll = COLLECT(
     a.datas,
     strip=False,
     upx=True,
-    upx_exclude=[],
+    upx_exclude=['*.dll', '*.so'],
     name='MisterTimer',
 )
