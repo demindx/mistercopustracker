@@ -48,8 +48,10 @@ jobs:
         with:
           name: MisterTimer
 
-      - name: Zip artifact
-        run: zip -r MisterTimer.zip MisterTimer/
+      - name: Create release archive
+        run: |
+          ls -la
+          zip -r MisterTimer.zip .
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
