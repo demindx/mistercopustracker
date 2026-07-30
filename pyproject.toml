@@ -1,7 +1,7 @@
 [project]
-name = "head-timer-tracker"
+name = "mistertimer"
 version = "0.1.0"
-description = "OBS head-tracking timer widget — pin a timer source to streamer's forehead"
+description = "MisterTimer — OBS head-tracking widget. Pin any source to streamer's forehead."
 requires-python = ">=3.11,<3.14"
 dependencies = [
     "nicegui>=1.4.0,<2.0.0",
@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [project.scripts]
-head-tracker = "run:main"
+mistertimer = "run:main"
 
 [dependency-groups]
 dev = [

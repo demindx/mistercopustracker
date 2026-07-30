@@ -124,7 +124,7 @@ class HeadTimerUI:
 
     def _build_ui(self):
         with ui.header().classes("items-center justify-between"):
-            ui.label("Head Timer Tracker").classes("text-h5")
+            ui.label("MisterTimer").classes("text-h5")
             with ui.row():
                 self._connect_button = ui.button("Connect OBS", on_click=self._connect_to_obs)
                 ui.link("Settings", "/settings").classes("text-white")
@@ -392,7 +392,7 @@ class HeadTimerUI:
         ui.run(
             host=host,
             port=port,
-            title="Head Timer Tracker",
+            title="MisterTimer",
             reload=False,
             show=show,
             favicon="🎯",

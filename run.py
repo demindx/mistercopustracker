@@ -10,7 +10,7 @@ from ui.app import HeadTimerUI
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Head Timer Tracker — pin OBS timer widget to streamer's forehead"
+        description="MisterTimer — pin OBS widget to streamer's forehead"
     )
     parser.add_argument(
         "--host",

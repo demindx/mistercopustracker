@@ -13,12 +13,12 @@ if [ ! -f models/face_landmarker.task ]; then
 fi
 
 echo "=== Building with PyInstaller ==="
-uv run pyinstaller --clean --noconfirm HeadTimerTracker.spec
+uv run pyinstaller --clean --noconfirm MisterTimer.spec
 
 echo "=== Build complete ==="
-echo "Output: dist/HeadTimerTracker/"
-if [ -f "dist/HeadTimerTracker/HeadTimerTracker.exe" ]; then
-    echo "Windows: dist/HeadTimerTracker/HeadTimerTracker.exe"
+echo "Output: dist/MisterTimer/"
+if [ -f "dist/MisterTimer/MisterTimer.exe" ]; then
+    echo "Windows: dist/MisterTimer/MisterTimer.exe"
 else
-    echo "Binary: dist/HeadTimerTracker/HeadTimerTracker"
+    echo "Binary: dist/MisterTimer/MisterTimer"
 fi

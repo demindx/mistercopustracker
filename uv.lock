@@ -517,40 +517,6 @@ wheels = [
 ]
 
 [[package]]
-name = "head-timer-tracker"
-version = "0.1.0"
-source = { virtual = "." }
-dependencies = [
-    { name = "mediapipe" },
-    { name = "nicegui" },
-    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
-    { name = "numpy", version = "2.5.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
-    { name = "obsws-python" },
-    { name = "opencv-python" },
-    { name = "pillow" },
-    { name = "pystray" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "pyinstaller" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "mediapipe", specifier = ">=0.10.0" },
-    { name = "nicegui", specifier = ">=1.4.0,<2.0.0" },
-    { name = "numpy", specifier = ">=1.24.0" },
-    { name = "obsws-python", specifier = ">=1.0.0" },
-    { name = "opencv-python", specifier = ">=4.8.0" },
-    { name = "pillow", specifier = ">=10.0.0" },
-    { name = "pystray", specifier = ">=0.19.0" },
-]
-
-[package.metadata.requires-dev]
-dev = [{ name = "pyinstaller", specifier = ">=6.21.0" }]
-
-[[package]]
 name = "httpcore"
 version = "1.0.9"
 source = { registry = "https://pypi.org/simple" }
@@ -867,6 +833,40 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/68/53/ffb67e668f23130aff197ec49be912be910c128b60658000d8bf263207c9/mediapipe-1.0.0-py3-none-win_amd64.whl", hash = "sha256:da57e6719bbab05007272c91d6ca2e0e2e370709491cbe344a372f87e25cf604", size = 16057095, upload-time = "2026-07-27T21:02:24.647Z" },
     { url = "https://files.pythonhosted.org/packages/b4/39/1513febb6c922e0813b93bbdde5289f32c49f4bd4bf768bc199e91285299/mediapipe-1.0.0-py3-none-win_arm64.whl", hash = "sha256:01260f58fedd2cbebe69f4d4fcbc6327aba17090e19ef6a03c7afda084cd64e1", size = 14056470, upload-time = "2026-07-27T21:02:26.959Z" },
 ]
+
+[[package]]
+name = "mistertimer"
+version = "0.1.0"
+source = { virtual = "." }
+dependencies = [
+    { name = "mediapipe" },
+    { name = "nicegui" },
+    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "numpy", version = "2.5.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "obsws-python" },
+    { name = "opencv-python" },
+    { name = "pillow" },
+    { name = "pystray" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pyinstaller" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "mediapipe", specifier = ">=0.10.0" },
+    { name = "nicegui", specifier = ">=1.4.0,<2.0.0" },
+    { name = "numpy", specifier = ">=1.24.0" },
+    { name = "obsws-python", specifier = ">=1.0.0" },
+    { name = "opencv-python", specifier = ">=4.8.0" },
+    { name = "pillow", specifier = ">=10.0.0" },
+    { name = "pystray", specifier = ">=0.19.0" },
+]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pyinstaller", specifier = ">=6.21.0" }]
 
 [[package]]
 name = "multidict"

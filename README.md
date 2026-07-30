@@ -1,4 +1,4 @@
-# Head Timer Tracker
+# MisterTimer
 
 Инструмент для OBS, который закрепляет любой виджет (таймер) на лбу стримера и двигает его вслед за движениями головы.
 
@@ -23,8 +23,8 @@ SetSceneItemTransform (двигаем виджет через OBS WebSocket)
 ## Установка и запуск
 
 ```bash
-git clone https://github.com/demindx/headTimerTracker.git
-cd headTimerTracker
+git clone https://github.com/demindx/mistercopustracker.git
+cd mistercopustracker
 uv sync
 uv run python run.py
 ```
@@ -71,7 +71,7 @@ uv run python run.py --port 9000   # Свой порт
 ```bash
 # На Windows-машине (PyInstaller не кросс-компилирует):
 bash build.sh
-# Вывод: dist/HeadTimerTracker/HeadTimerTracker.exe
+# Вывод: dist/MisterTimer/MisterTimer.exe
 ```
 
 Требуется Python 3.11+ и `uv`. Перед сборкой скрипт скачает модель MediaPipe и запустит PyInstaller. Выходной .exe содержит всё необходимое, запускается без установки Python.

@@ -30,13 +30,13 @@ jobs:
         run: uv run python -c "from PIL import Image; img = Image.open('icon.png'); img.save('icon.ico', format='ICO', sizes=[(256,256),(128,128),(64,64),(48,48),(32,32),(16,16)])"
 
       - name: Build with PyInstaller
-        run: uv run pyinstaller --clean --noconfirm HeadTimerTracker.spec
+        run: uv run pyinstaller --clean --noconfirm MisterTimer.spec
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: HeadTimerTracker.exe
-          path: dist/HeadTimerTracker/
+          name: MisterTimer
+          path: dist/MisterTimer/
 
   release:
     needs: build
@@ -46,13 +46,13 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: HeadTimerTracker.exe
+          name: MisterTimer
 
       - name: Zip artifact
-        run: zip -r HeadTimerTracker.zip HeadTimerTracker/
+        run: zip -r MisterTimer.zip MisterTimer/
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          files: HeadTimerTracker.zip
+          files: MisterTimer.zip
           generate_release_notes: true
