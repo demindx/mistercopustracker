@@ -31,6 +31,7 @@ class HeadTracker:
         self._smoother: Smoother | None = None
         self._thread: threading.Thread | None = None
         self._stop_event = threading.Event()
+        self._done_event = threading.Event()
         self._running = False
         self._face_detected = False
         self._latest_frame: np.ndarray | None = None
@@ -46,6 +47,7 @@ class HeadTracker:
         self._current_rotation: float = 0.0
         self._base_scale_x: float | None = None
         self._base_scale_y: float | None = None
+        self._saved_transform: SceneItemTransform | None = None
 
     @property
     def is_running(self) -> bool:
@@ -77,6 +79,7 @@ class HeadTracker:
             return
 
         self._stop_event.clear()
+        self._done_event.clear()
         self._resolve_source_ids()
 
         if self._timer_item_id is None:
@@ -94,6 +97,12 @@ class HeadTracker:
         self._current_rotation = 0.0
         self._base_scale_x = None
         self._base_scale_y = None
+        self._saved_transform = None
+
+        with self._obs_lock:
+            self._saved_transform = self.obs.get_scene_item_transform(
+                self.config.scene_name, self._timer_item_id
+            )
 
         self._thread = threading.Thread(target=self._track_loop, daemon=True)
         self._thread.start()
@@ -102,6 +111,21 @@ class HeadTracker:
     def stop(self):
         self._stop_event.set()
         self._running = False
+        self._done_event.wait(timeout=0.5)
+
+        if self._saved_transform is not None and self._timer_item_id is not None:
+            t = self._saved_transform
+            with self._obs_lock:
+                self.obs.set_scene_item_transform(
+                    self.config.scene_name,
+                    self._timer_item_id,
+                    pos_x=t.pos_x,
+                    pos_y=t.pos_y,
+                    rotation=t.rotation,
+                    scale_x=t.scale_x,
+                    scale_y=t.scale_y,
+                )
+
         self._webcam_transform_cache = None
 
     def _resolve_source_ids(self):
@@ -242,3 +266,5 @@ class HeadTracker:
         if self._detector:
             self._detector.release()
             self._detector = None
+
+        self._done_event.set()
