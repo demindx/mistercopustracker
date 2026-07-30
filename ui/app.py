@@ -40,6 +40,7 @@ class HeadTimerUI:
         self._smoothing_slider: ui.slider | None = None
         self._rotation_checkbox: ui.checkbox | None = None
         self._offset_input: ui.number | None = None
+        self._target_fps_slider: ui.slider | None = None
         self._start_button: ui.button | None = None
         self._stop_button: ui.button | None = None
         self._connect_button: ui.button | None = None
@@ -76,6 +77,7 @@ class HeadTimerUI:
             self.config.smoothing_alpha = trk.get("smoothing_alpha", 0.3)
             self.config.rotation_enabled = trk.get("rotation_enabled", True)
             self.config.offset_y = trk.get("offset_y", 20)
+            self.config.target_fps = trk.get("target_fps", 30.0)
 
             log.info(
                 "Config loaded: scene='%s' timer='%s' camera='%s' smoothing=%.2f",
@@ -101,6 +103,7 @@ class HeadTimerUI:
                 "smoothing_alpha": self.config.smoothing_alpha,
                 "rotation_enabled": self.config.rotation_enabled,
                 "offset_y": self.config.offset_y,
+                "target_fps": self.config.target_fps,
             },
         }
         with open(CONFIG_PATH, "w") as f:
@@ -201,6 +204,15 @@ class HeadTimerUI:
                         max=200,
                         format="%.0f",
                     ).classes("w-full")
+                    self._target_fps_slider = (
+                        ui.slider(min=5, max=60, step=5, value=self.config.target_fps)
+                        .props("label")
+                        .classes("w-full")
+                    )
+                    ui.label().bind_text_from(
+                        self._target_fps_slider, "value",
+                        backward=lambda v: f"Target FPS: {v:.0f}",
+                    )
 
                 with ui.card().classes("w-full"):
                     ui.label("Status").classes("text-subtitle1")
@@ -321,15 +333,17 @@ class HeadTimerUI:
         self.config.smoothing_alpha = self._smoothing_slider.value
         self.config.rotation_enabled = self._rotation_checkbox.value
         self.config.offset_y = int(self._offset_input.value)
+        self.config.target_fps = float(self._target_fps_slider.value)
 
         log.info(
-            "Starting tracking: scene='%s' timer='%s' camera='%s' alpha=%.2f rotation=%s offset=%d",
+            "Starting tracking: scene='%s' timer='%s' camera='%s' alpha=%.2f rotation=%s offset=%d fps=%.0f",
             self.config.scene_name,
             self.config.timer_source_name,
             self.config.camera_source_name,
             self.config.smoothing_alpha,
             self.config.rotation_enabled,
             self.config.offset_y,
+            self.config.target_fps,
         )
 
         self._save_config()
@@ -350,6 +364,7 @@ class HeadTimerUI:
         self._smoothing_slider.disable()
         self._rotation_checkbox.disable()
         self._offset_input.disable()
+        self._target_fps_slider.disable()
 
         ui.notify("Tracking started", type="positive")
 
@@ -365,6 +380,7 @@ class HeadTimerUI:
         self._smoothing_slider.enable()
         self._rotation_checkbox.enable()
         self._offset_input.enable()
+        self._target_fps_slider.enable()
 
         self._face_status.set_text("Face: ⬤ Not detected")
         self._fps_label.set_text("FPS: --")

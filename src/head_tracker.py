@@ -23,6 +23,7 @@ class TrackerConfig:
     smoothing_alpha: float = 0.3
     rotation_enabled: bool = True
     offset_y: int = 20
+    target_fps: float = 30.0
 
 
 class HeadTracker:
@@ -212,28 +213,41 @@ class HeadTracker:
 
     def _track_loop(self):
         frame_count = 0
-        last_fps_time = time.time()
-        last_transform_refresh = time.time()
-        _frame_fail_logged = False
+        fps_interval_start = time.perf_counter()
+        last_transform_refresh = time.perf_counter()
+        last_keepalive = time.perf_counter()
+        consecutive_failures = 0
         _no_face_logged = False
 
-        log.debug("Tracking loop started")
+        log.info(
+            "Tracking loop started — target FPS: %.0f",
+            self.config.target_fps,
+        )
         while not self._stop_event.is_set():
             if self._detector is None or self._mapper is None or self._smoother is None:
                 break
 
+            loop_start = time.perf_counter()
+
             frame = self._fetch_frame()
             if frame is None:
-                if not _frame_fail_logged:
+                consecutive_failures += 1
+                if consecutive_failures == 1:
                     log.warning(
                         "Cannot fetch screenshot from source '%s' — "
                         "check OBS connection and camera source name",
                         self.config.camera_source_name,
                     )
-                    _frame_fail_logged = True
+                if consecutive_failures >= 10:
+                    log.error(
+                        "Screenshot fetch failed %d times consecutively — "
+                        "stopping tracking loop",
+                        consecutive_failures,
+                    )
+                    break
                 time.sleep(0.5)
                 continue
-            _frame_fail_logged = False
+            consecutive_failures = 0
 
             forehead_data = self._detector.detect(frame)
 
@@ -243,14 +257,14 @@ class HeadTracker:
                         log.info("Face detected")
                     _no_face_logged = False
 
-                    self._latest_frame = forehead_data.frame.copy()
+                    self._latest_frame = forehead_data.frame
                     self._latest_forehead = forehead_data
                     self._face_detected = True
 
-                    transform = None
-                    if time.time() - last_transform_refresh > 5.0:
+                    now = time.perf_counter()
+                    if now - last_transform_refresh > 5.0:
                         transform = self._get_cached_webcam_transform()
-                        last_transform_refresh = time.time()
+                        last_transform_refresh = now
                     elif self._webcam_transform_cache is None:
                         transform = self._get_cached_webcam_transform()
                     else:
@@ -310,14 +324,21 @@ class HeadTracker:
                     self._face_detected = False
 
             frame_count += 1
-            now = time.time()
-            elapsed = now - last_fps_time
+            now = time.perf_counter()
+            elapsed = now - fps_interval_start
             if elapsed >= 1.0:
                 self._fps = frame_count / elapsed
                 frame_count = 0
-                last_fps_time = now
+                fps_interval_start = now
 
-            time.sleep(0.002)
+            if now - last_keepalive >= 10.0:
+                self.obs.ping()
+                last_keepalive = now
+
+            loop_elapsed = time.perf_counter() - loop_start
+            frame_budget = 1.0 / self.config.target_fps
+            if loop_elapsed < frame_budget:
+                time.sleep(frame_budget - loop_elapsed)
 
         if self._detector:
             self._detector.release()

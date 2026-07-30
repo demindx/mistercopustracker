@@ -90,6 +90,15 @@ class OBSConnector:
             self._client = None
             log.info("Disconnected from OBS")
 
+    def ping(self) -> bool:
+        if not self._client:
+            return False
+        try:
+            self._client.send("GetVersion")
+            return True
+        except Exception:
+            return False
+
     def get_scenes(self) -> list[SceneInfo]:
         if not self._client:
             return []
