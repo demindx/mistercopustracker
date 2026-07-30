@@ -438,8 +438,7 @@ class HeadTimerUI:
         icon_path = icon_dir / "icon.png"
         favicon = "🎯"
         if icon_path.exists():
-            app.add_static_files("/icon", str(icon_dir))
-            favicon = "/icon/icon.png"
+            favicon = str(icon_path)
 
         ui.run(
             host=host,
