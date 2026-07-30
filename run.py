@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 import argparse
+import logging
 import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from src.logger import setup_logging
 from ui.app import HeadTimerUI
+
+log = logging.getLogger(__name__)
 
 
 def main():
@@ -34,7 +38,14 @@ def main():
         action="store_true",
         help="Listen on all interfaces (0.0.0.0)",
     )
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Enable debug logging",
+    )
     args = parser.parse_args()
+
+    setup_logging(debug=args.debug)
 
     if getattr(sys, "frozen", False):
         if sys.stdout is None:
@@ -43,6 +54,8 @@ def main():
             sys.stderr = open(os.devnull, "w")
 
     host = "0.0.0.0" if args.public else args.host
+
+    log.info("MisterTimer starting on %s:%s", host, args.port)
 
     app = HeadTimerUI()
     start_tray()
@@ -53,8 +66,9 @@ def start_tray():
     try:
         from ui.tray import setup_tray
         setup_tray()
+        log.debug("System tray icon started")
     except Exception:
-        pass
+        log.debug("System tray not available", exc_info=True)
 
 
 if __name__ == "__main__":

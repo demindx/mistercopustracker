@@ -1,7 +1,10 @@
 import asyncio
+import logging
 from dataclasses import dataclass
 
 from obsws_python import ReqClient
+
+log = logging.getLogger(__name__)
 
 
 @dataclass
@@ -58,6 +61,7 @@ class OBSConnector:
         return self._canvas_height
 
     def connect(self) -> bool:
+        log.info("Connecting to OBS at %s:%s", self.host, self.port)
         try:
             kwargs = {"host": self.host, "port": self.port}
             if self.password:
@@ -66,8 +70,14 @@ class OBSConnector:
             settings = self._client.send("GetVideoSettings")
             self._canvas_width = settings.base_width
             self._canvas_height = settings.base_height
+            log.info(
+                "Connected to OBS — canvas %s×%s",
+                self._canvas_width,
+                self._canvas_height,
+            )
             return True
-        except Exception:
+        except Exception as e:
+            log.warning("Failed to connect to OBS: %s", e)
             self._client = None
             return False
 
@@ -78,6 +88,7 @@ class OBSConnector:
             except Exception:
                 pass
             self._client = None
+            log.info("Disconnected from OBS")
 
     def get_scenes(self) -> list[SceneInfo]:
         if not self._client:
@@ -90,8 +101,10 @@ class OBSConnector:
                     name=s.get("sceneName", ""),
                     index=s.get("sceneIndex", 0),
                 ))
+            log.debug("Got %d scenes", len(scenes))
             return scenes
-        except Exception:
+        except Exception as e:
+            log.error("Failed to get scene list: %s", e)
             return []
 
     def get_scene_items(self, scene_name: str) -> list[SceneItemInfo]:
@@ -107,8 +120,10 @@ class OBSConnector:
                     type=item.get("inputKind", ""),
                     index=item.get("sceneItemIndex", 0),
                 ))
+            log.debug("Got %d items for scene '%s'", len(items), scene_name)
             return items
-        except Exception:
+        except Exception as e:
+            log.error("Failed to get items for scene '%s': %s", scene_name, e)
             return []
 
     def get_scene_item_id_by_name(self, scene_name: str, source_name: str) -> int | None:
@@ -199,8 +214,11 @@ class OBSConnector:
                 "sceneItemId": item_id,
                 "sceneItemTransform": transform_data,
             })
-        except Exception:
-            pass
+        except Exception as e:
+            log.error(
+                "Failed to set transform for item %s in scene '%s': %s",
+                item_id, scene_name, e,
+            )
 
     async def _run_sync(self, func, *args, **kwargs):
         loop = asyncio.get_running_loop()
@@ -224,6 +242,7 @@ class OBSConnector:
         self, source_name: str, width: int = 640, height: int = 360, quality: int = 80
     ) -> str | None:
         if not self._client:
+            log.debug("get_source_screenshot: not connected to OBS")
             return None
         try:
             resp = self._client.send("GetSourceScreenshot", {
@@ -234,5 +253,9 @@ class OBSConnector:
                 "imageCompressionQuality": quality,
             })
             return resp.image_data
-        except Exception:
+        except Exception as e:
+            log.error(
+                "Failed to get screenshot for source '%s': %s",
+                source_name, e,
+            )
             return None

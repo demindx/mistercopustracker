@@ -1,3 +1,4 @@
+import logging
 import sys
 import urllib.request
 from dataclasses import dataclass
@@ -8,6 +9,8 @@ import mediapipe as mp
 import numpy as np
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
+
+log = logging.getLogger(__name__)
 
 MODEL_URL = (
     "https://storage.googleapis.com/mediapipe-models/"
@@ -54,6 +57,7 @@ class FaceDetector:
 
     def __init__(self, max_faces: int = 1):
         model_path = self._ensure_model()
+        log.debug("Loading face landmarker from %s", model_path)
         base_options = python.BaseOptions(model_asset_path=str(model_path))
         options = vision.FaceLandmarkerOptions(
             base_options=base_options,
@@ -67,20 +71,23 @@ class FaceDetector:
         )
         self.landmarker = vision.FaceLandmarker.create_from_options(options)
         self._frame_timestamp = 0
+        log.info("Face detector initialized")
 
     def _ensure_model(self) -> Path:
         if getattr(sys, "frozen", False):
             bundled = Path(sys._MEIPASS) / "models" / "face_landmarker.task"
             if bundled.exists():
+                log.info("Using bundled face landmarker model: %s", bundled)
                 return bundled
 
         MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
         if not MODEL_PATH.exists():
-            print(f"Downloading face landmarker model to {MODEL_PATH}...")
+            log.info("Downloading face landmarker model from %s", MODEL_URL)
             try:
                 urllib.request.urlretrieve(MODEL_URL, MODEL_PATH)
-                print("Model downloaded.")
+                log.info("Model downloaded to %s", MODEL_PATH)
             except Exception as e:
+                log.error("Failed to download model: %s", e)
                 raise RuntimeError(
                     f"Failed to download model from {MODEL_URL}: {e}. "
                     f"Try downloading manually to {MODEL_PATH}"
@@ -93,7 +100,11 @@ class FaceDetector:
         mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_frame)
 
         self._frame_timestamp += 33
-        result = self.landmarker.detect_for_video(mp_image, self._frame_timestamp)
+        try:
+            result = self.landmarker.detect_for_video(mp_image, self._frame_timestamp)
+        except Exception:
+            log.error("Face landmarker detection failed", exc_info=True)
+            return None
 
         if not result.face_landmarks:
             return None

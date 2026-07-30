@@ -1,5 +1,6 @@
 import base64
 import json
+import logging
 import os
 import sys
 from pathlib import Path
@@ -10,6 +11,8 @@ from nicegui import ui, app
 
 from src.head_tracker import HeadTracker, TrackerConfig
 from src.obs_connector import OBSConnector
+
+log = logging.getLogger(__name__)
 
 CONFIG_PATH = os.environ.get(
     "HEAD_TIMER_CONFIG",
@@ -47,7 +50,6 @@ class HeadTimerUI:
 
     def _load_config(self):
         if not os.path.exists(CONFIG_PATH):
-            # copy example config on first run
             example_src = EXAMPLE_CONFIG_PATH
             if getattr(sys, "frozen", False):
                 bundled = Path(sys._MEIPASS) / "config.example.json"
@@ -56,6 +58,7 @@ class HeadTimerUI:
             if os.path.exists(example_src):
                 import shutil
                 shutil.copy(example_src, CONFIG_PATH)
+                log.info("Created config from example: %s", CONFIG_PATH)
 
         try:
             with open(CONFIG_PATH) as f:
@@ -73,8 +76,16 @@ class HeadTimerUI:
             self.config.smoothing_alpha = trk.get("smoothing_alpha", 0.3)
             self.config.rotation_enabled = trk.get("rotation_enabled", True)
             self.config.offset_y = trk.get("offset_y", 20)
+
+            log.info(
+                "Config loaded: scene='%s' timer='%s' camera='%s' smoothing=%.2f",
+                self.config.scene_name,
+                self.config.timer_source_name,
+                self.config.camera_source_name,
+                self.config.smoothing_alpha,
+            )
         except (FileNotFoundError, json.JSONDecodeError):
-            pass
+            log.warning("No config found at %s, using defaults", CONFIG_PATH)
 
     def _save_config(self):
         data = {
@@ -94,6 +105,7 @@ class HeadTimerUI:
         }
         with open(CONFIG_PATH, "w") as f:
             json.dump(data, f, indent=2)
+        log.debug("Config saved to %s", CONFIG_PATH)
 
     def _setup_page(self):
         @ui.page("/")
@@ -208,6 +220,7 @@ class HeadTimerUI:
                     self._stop_button.disable()
 
     async def _connect_to_obs(self):
+        log.info("Connecting to OBS...")
         self._connect_button.disable()
         self._connect_button.text = "Connecting..."
 
@@ -228,6 +241,7 @@ class HeadTimerUI:
             await self._populate_scenes()
             ui.notify("Connected to OBS", type="positive")
         else:
+            log.error("Failed to connect to OBS")
             self._connect_button.text = "Connect OBS"
             self._connect_button.enable()
             self._connect_button.props("color=None")
@@ -248,6 +262,8 @@ class HeadTimerUI:
         options = {s.name: s.name for s in scenes}
         self._scene_select.options = options
         self._scene_select.update()
+
+        log.info("Populated %d scenes", len(options))
 
         if self.config.scene_name and self.config.scene_name in options:
             self._scene_select.value = self.config.scene_name
@@ -277,6 +293,11 @@ class HeadTimerUI:
         if self.config.camera_source_name in source_options:
             self._camera_select.value = self.config.camera_source_name
 
+        log.debug(
+            "Scene '%s': %d sources available",
+            scene_name, len(source_options),
+        )
+
     def _on_timer_change(self):
         self.config.timer_source_name = self._timer_select.value or ""
 
@@ -286,14 +307,30 @@ class HeadTimerUI:
     def _start_tracking(self):
         if not self.obs.connected:
             ui.notify("Connect to OBS first", type="warning")
+            log.warning("Start tracking blocked: not connected to OBS")
             return
         if not self.config.timer_source_name:
             ui.notify("Select a timer widget source", type="warning")
+            log.warning("Start tracking blocked: no timer source selected")
+            return
+        if not self.config.camera_source_name:
+            ui.notify("Select a webcam source", type="warning")
+            log.warning("Start tracking blocked: no camera source selected")
             return
 
         self.config.smoothing_alpha = self._smoothing_slider.value
         self.config.rotation_enabled = self._rotation_checkbox.value
         self.config.offset_y = int(self._offset_input.value)
+
+        log.info(
+            "Starting tracking: scene='%s' timer='%s' camera='%s' alpha=%.2f rotation=%s offset=%d",
+            self.config.scene_name,
+            self.config.timer_source_name,
+            self.config.camera_source_name,
+            self.config.smoothing_alpha,
+            self.config.rotation_enabled,
+            self.config.offset_y,
+        )
 
         self._save_config()
         self.tracker.configure(self.config)
@@ -301,6 +338,7 @@ class HeadTimerUI:
         try:
             self.tracker.start()
         except RuntimeError as e:
+            log.error("Failed to start tracker: %s", e)
             ui.notify(str(e), type="negative")
             return
 
@@ -316,6 +354,7 @@ class HeadTimerUI:
         ui.notify("Tracking started", type="positive")
 
     def _stop_tracking(self):
+        log.info("Stopping tracking")
         self.tracker.stop()
 
         self._start_button.enable()
@@ -389,6 +428,7 @@ class HeadTimerUI:
                 )
 
     def run(self, host: str = "127.0.0.1", port: int = 8080, show: bool = True):
+        log.info("Starting NiceGUI server on %s:%s", host, port)
         ui.run(
             host=host,
             port=port,

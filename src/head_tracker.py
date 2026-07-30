@@ -1,4 +1,5 @@
 import base64
+import logging
 import threading
 import time
 from dataclasses import dataclass
@@ -10,6 +11,8 @@ from src.coordinate_mapper import CoordinateMapper
 from src.face_detector import FaceDetector, ForeheadData
 from src.obs_connector import OBSConnector, SceneItemTransform
 from src.smoother import Smoother
+
+log = logging.getLogger(__name__)
 
 
 @dataclass
@@ -78,6 +81,8 @@ class HeadTracker:
         if self._running:
             return
 
+        log.info("Starting head tracker")
+
         self._stop_event.clear()
         self._done_event.clear()
         self._resolve_source_ids()
@@ -87,6 +92,15 @@ class HeadTracker:
                 f"Source '{self.config.timer_source_name}' not found"
             )
 
+        if self._webcam_item_id is None:
+            log.warning(
+                "Webcam source '%s' not found in scene '%s' — "
+                "screenshot fetch may fail",
+                self.config.camera_source_name,
+                self.config.scene_name,
+            )
+
+        log.debug("Creating face detector")
         self._detector = FaceDetector()
         self._mapper = CoordinateMapper(
             canvas_width=self.obs.canvas_width,
@@ -99,22 +113,35 @@ class HeadTracker:
         self._base_scale_y = None
         self._saved_transform = None
 
+        log.debug("Saving current timer widget transform")
         with self._obs_lock:
             self._saved_transform = self.obs.get_scene_item_transform(
                 self.config.scene_name, self._timer_item_id
             )
+            if self._saved_transform:
+                log.debug(
+                    "Saved transform: pos=(%.1f, %.1f) scale=(%.2f, %.2f) rot=%.1f",
+                    self._saved_transform.pos_x,
+                    self._saved_transform.pos_y,
+                    self._saved_transform.scale_x,
+                    self._saved_transform.scale_y,
+                    self._saved_transform.rotation,
+                )
 
         self._thread = threading.Thread(target=self._track_loop, daemon=True)
         self._thread.start()
         self._running = True
+        log.info("Head tracker started — thread running")
 
     def stop(self):
+        log.info("Stopping head tracker")
         self._stop_event.set()
         self._running = False
         self._done_event.wait(timeout=0.5)
 
         if self._saved_transform is not None and self._timer_item_id is not None:
             t = self._saved_transform
+            log.debug("Restoring original timer widget transform")
             with self._obs_lock:
                 self.obs.set_scene_item_transform(
                     self.config.scene_name,
@@ -127,6 +154,7 @@ class HeadTracker:
                 )
 
         self._webcam_transform_cache = None
+        log.info("Head tracker stopped")
 
     def _resolve_source_ids(self):
         with self._obs_lock:
@@ -136,6 +164,11 @@ class HeadTracker:
             self._webcam_item_id = self.obs.get_scene_item_id_by_name(
                 self.config.scene_name, self.config.camera_source_name
             )
+        log.debug(
+            "Resolved source IDs: timer=%s, webcam=%s",
+            self._timer_item_id,
+            self._webcam_item_id,
+        )
 
     def _get_cached_webcam_transform(self) -> SceneItemTransform | None:
         if self._webcam_item_id is None:
@@ -170,28 +203,46 @@ class HeadTracker:
             data = base64.b64decode(b64_str)
             arr = np.frombuffer(data, dtype=np.uint8)
             frame = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+            if frame is None:
+                log.debug("cv2.imdecode returned None")
             return frame
         except Exception:
+            log.error("Failed to decode screenshot frame", exc_info=True)
             return None
 
     def _track_loop(self):
         frame_count = 0
         last_fps_time = time.time()
         last_transform_refresh = time.time()
+        _frame_fail_logged = False
+        _no_face_logged = False
 
+        log.debug("Tracking loop started")
         while not self._stop_event.is_set():
             if self._detector is None or self._mapper is None or self._smoother is None:
                 break
 
             frame = self._fetch_frame()
             if frame is None:
-                time.sleep(0.002)
+                if not _frame_fail_logged:
+                    log.warning(
+                        "Cannot fetch screenshot from source '%s' — "
+                        "check OBS connection and camera source name",
+                        self.config.camera_source_name,
+                    )
+                    _frame_fail_logged = True
+                time.sleep(0.5)
                 continue
+            _frame_fail_logged = False
 
             forehead_data = self._detector.detect(frame)
 
             with self._lock:
                 if forehead_data is not None:
+                    if _no_face_logged:
+                        log.info("Face detected")
+                    _no_face_logged = False
+
                     self._latest_frame = forehead_data.frame.copy()
                     self._latest_forehead = forehead_data
                     self._face_detected = True
@@ -250,7 +301,12 @@ class HeadTracker:
                                     scale_x=sx,
                                     scale_y=sy,
                                 )
+                    else:
+                        log.debug("canvas_coords is None — mapper returned no result")
                 else:
+                    if not _no_face_logged:
+                        log.info("No face detected in frame — waiting for face")
+                        _no_face_logged = True
                     self._face_detected = False
 
             frame_count += 1
@@ -267,4 +323,5 @@ class HeadTracker:
             self._detector.release()
             self._detector = None
 
+        log.debug("Tracking loop ended")
         self._done_event.set()
