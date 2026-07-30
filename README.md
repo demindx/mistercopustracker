@@ -65,3 +65,13 @@ uv run python run.py --no-browser  # Без авто-открытия брауз
 uv run python run.py --public      # Доступ по сети (0.0.0.0)
 uv run python run.py --port 9000   # Свой порт
 ```
+
+## Сборка в .exe (Windows)
+
+```bash
+# На Windows-машине (PyInstaller не кросс-компилирует):
+bash build.sh
+# Вывод: dist/HeadTimerTracker/HeadTimerTracker.exe
+```
+
+Требуется Python 3.11+ и `uv`. Перед сборкой скрипт скачает модель MediaPipe и запустит PyInstaller. Выходной .exe содержит всё необходимое, запускается без установки Python.

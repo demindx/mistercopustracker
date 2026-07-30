@@ -1,6 +1,7 @@
 import base64
 import json
 import os
+import sys
 from pathlib import Path
 
 import cv2
@@ -14,6 +15,7 @@ CONFIG_PATH = os.environ.get(
     "HEAD_TIMER_CONFIG",
     str(Path(__file__).resolve().parent.parent / "config.json"),
 )
+EXAMPLE_CONFIG_PATH = str(Path(__file__).resolve().parent.parent / "config.example.json")
 
 
 class HeadTimerUI:
@@ -44,6 +46,17 @@ class HeadTimerUI:
         self._setup_page()
 
     def _load_config(self):
+        if not os.path.exists(CONFIG_PATH):
+            # copy example config on first run
+            example_src = EXAMPLE_CONFIG_PATH
+            if getattr(sys, "frozen", False):
+                bundled = Path(sys._MEIPASS) / "config.example.json"
+                if bundled.exists():
+                    example_src = str(bundled)
+            if os.path.exists(example_src):
+                import shutil
+                shutil.copy(example_src, CONFIG_PATH)
+
         try:
             with open(CONFIG_PATH) as f:
                 data = json.load(f)

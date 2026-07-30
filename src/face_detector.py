@@ -1,3 +1,4 @@
+import sys
 import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
@@ -68,6 +69,11 @@ class FaceDetector:
         self._frame_timestamp = 0
 
     def _ensure_model(self) -> Path:
+        if getattr(sys, "frozen", False):
+            bundled = Path(sys._MEIPASS) / "models" / "face_landmarker.task"
+            if bundled.exists():
+                return bundled
+
         MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
         if not MODEL_PATH.exists():
             print(f"Downloading face landmarker model to {MODEL_PATH}...")
