@@ -18,7 +18,7 @@ _icon_ico = Path(SPECPATH) / "icon.ico"
 if _icon_png.exists():
     datas.append((str(_icon_png), "."))
 
-if not _icon_ico.exists() and _icon_png.exists():
+if _icon_png.exists():
     try:
         from PIL import Image
         img = Image.open(_icon_png)
@@ -26,11 +26,15 @@ if not _icon_ico.exists() and _icon_png.exists():
             _icon_ico, format="ICO",
             sizes=[(256, 256), (128, 128), (64, 64), (48, 48), (32, 32), (16, 16)],
         )
-    except Exception:
-        pass
+        print(f"SPEC: generated {_icon_ico} ({_icon_ico.stat().st_size} bytes)")
+    except Exception as e:
+        print(f"SPEC: icon.ico generation failed: {e}")
 
 if _icon_ico.exists():
     datas.append((str(_icon_ico), "."))
+    print(f"SPEC: icon.ico ready, {_icon_ico.stat().st_size} bytes")
+else:
+    print("SPEC: WARNING — no icon.ico, EXE will use default icon")
 
 _mp_bin = _mp_dir / "tasks" / "c"
 _mp_binaries = []
@@ -105,7 +109,11 @@ a = Analysis(
 )
 pyz = PYZ(a.pure)
 
-exe_icon = str(_icon_ico) if _icon_ico.exists() else None
+exe_icon = "icon.ico" if _icon_ico.exists() else None
+if exe_icon:
+    print(f"SPEC: EXE icon set to {exe_icon}")
+else:
+    print("SPEC: EXE icon is None — default will be used")
 
 exe = EXE(
     pyz,
