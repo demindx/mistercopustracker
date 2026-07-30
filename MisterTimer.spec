@@ -17,10 +17,34 @@ if _icon_path.exists():
     datas.append((str(_icon_path), "."))
 
 _mp_bin = _mp_dir / "tasks" / "c"
-if _mp_bin.exists():
-    for f in _mp_bin.iterdir():
-        if f.suffix in (".so", ".dll"):
-            datas.append((str(f), str(f.relative_to(_mp_dir.parent))))
+_mp_binaries = []
+_mp_dll = None
+for candidate in [
+    _mp_dir / "tasks" / "c",
+    _mp_dir / "modules" / "face_landmarker",
+]:
+    if candidate.exists():
+        for f in candidate.iterdir():
+            if f.suffix in (".so", ".dll"):
+                dest = str(f.relative_to(_mp_dir.parent))
+                _mp_binaries.append((str(f), dest))
+                datas.append((str(f), dest))
+                _mp_dll = f
+                break
+    if _mp_dll:
+        break
+
+if not _mp_dll:
+    for f in _mp_dir.rglob("*.dll"):
+        dest = str(f.relative_to(_mp_dir.parent))
+        _mp_binaries.append((str(f), dest))
+        datas.append((str(f), dest))
+        break
+    for f in _mp_dir.rglob("*.so"):
+        dest = str(f.relative_to(_mp_dir.parent))
+        _mp_binaries.append((str(f), dest))
+        datas.append((str(f), dest))
+        break
 
 _model_dir = Path(SPECPATH) / "models"
 _model_file = _model_dir / "face_landmarker.task"
@@ -30,7 +54,7 @@ if _model_file.exists():
 a = Analysis(
     ['run.py'],
     pathex=[],
-    binaries=[],
+    binaries=_mp_binaries,
     datas=datas,
     hiddenimports=[
         "mediapipe",
