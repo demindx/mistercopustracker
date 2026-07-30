@@ -23,8 +23,8 @@ SetSceneItemTransform (двигаем виджет через OBS WebSocket)
 ## Установка и запуск
 
 ```bash
-git clone https://github.com/demindx/mistercopustracker.git
-cd mistercopustracker
+git clone https://github.com/demindx/mistertimer.git
+cd mistertimer
 uv sync
 uv run python run.py
 ```
