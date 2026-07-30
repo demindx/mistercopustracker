@@ -15,21 +15,29 @@ if getattr(sys, "frozen", False):
         pass
 
 
+class _DummyLoader:
+    def create_module(self, spec):
+        return types.ModuleType(spec.name)
+
+    def exec_module(self, module):
+        pass
+
+
 class _MPDrawingBlocker:
     BLOCK = {
         "mediapipe.tasks.python.vision.drawing_utils",
         "mediapipe.tasks.python.vision.drawing_styles",
     }
 
-    def find_module(self, fullname, path=None):
+    def find_spec(self, fullname, path, target=None):
         if fullname in self.BLOCK:
-            return self
+            return importlib.machinery.ModuleSpec(
+                fullname,
+                _DummyLoader(),
+                is_package=False,
+            )
         return None
 
-    def load_module(self, fullname):
-        mod = types.ModuleType(fullname)
-        sys.modules[fullname] = mod
-        return mod
 
-
+import importlib.machinery
 sys.meta_path.insert(0, _MPDrawingBlocker())

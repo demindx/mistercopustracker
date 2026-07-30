@@ -97,7 +97,10 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=["hooks/runtime.py"],
-    excludes=[],
+    excludes=[
+        "matplotlib", "mpl_toolkits", "pylab",
+        "tkinter", "Tkinter", "tcl", "tk", "_tkinter",
+    ],
     noarchive=False,
     optimize=0,
 )
