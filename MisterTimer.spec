@@ -12,14 +12,16 @@ datas = [
     (str(_ng_dir / "elements"), "nicegui/elements"),
 ]
 
-# bundle mediapipe .so/.dll
+_icon_path = Path(SPECPATH) / "icon.png"
+if _icon_path.exists():
+    datas.append((str(_icon_path), "."))
+
 _mp_bin = _mp_dir / "tasks" / "c"
 if _mp_bin.exists():
     for f in _mp_bin.iterdir():
         if f.suffix in (".so", ".dll"):
             datas.append((str(f), str(f.relative_to(_mp_dir.parent))))
 
-# bundle model if cached
 _model_dir = Path(SPECPATH) / "models"
 _model_file = _model_dir / "face_landmarker.task"
 if _model_file.exists():
@@ -42,6 +44,11 @@ a = Analysis(
         "obsws_python",
         "numpy",
         "PIL",
+        "pystray",
+        "pystray._win32",
+        "PIL.ImageDraw",
+        "PIL.Image",
+        "ui.tray",
     ],
     hookspath=[],
     hooksconfig={},
@@ -68,7 +75,6 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='icon.ico',
 )
 coll = COLLECT(
     exe,
