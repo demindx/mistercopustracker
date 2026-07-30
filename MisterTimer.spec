@@ -46,7 +46,7 @@ for candidate in [
     if candidate.exists():
         for f in candidate.iterdir():
             if f.suffix in (".so", ".dll"):
-                dest = str(f.relative_to(_mp_dir.parent))
+                dest = str(f.relative_to(_mp_dir.parent).parent)
                 _mp_binaries.append((str(f), dest))
                 datas.append((str(f), dest))
                 if not _mp_dll:
@@ -56,12 +56,12 @@ for candidate in [
 
 if not _mp_dll:
     for f in _mp_dir.rglob("*.dll"):
-        dest = str(f.relative_to(_mp_dir.parent))
+        dest = str(f.relative_to(_mp_dir.parent).parent)
         _mp_binaries.append((str(f), dest))
         datas.append((str(f), dest))
         break
     for f in _mp_dir.rglob("*.so"):
-        dest = str(f.relative_to(_mp_dir.parent))
+        dest = str(f.relative_to(_mp_dir.parent).parent)
         _mp_binaries.append((str(f), dest))
         datas.append((str(f), dest))
         break
