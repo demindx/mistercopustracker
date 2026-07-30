@@ -10,6 +10,8 @@
     "camera_source_name": "\u0423\u0441\u0442\u0440\u043e\u0439\u0441\u0442\u0432\u043e \u0437\u0430\u0445\u0432\u0430\u0442\u0430 \u0432\u0438\u0434\u0435\u043e V4L2",
     "smoothing_alpha": 0.7,
     "rotation_enabled": true,
-    "offset_y": 20
+    "offset_y": 20,
+    "target_fps": 30,
+    "camera_index": 0
   }
 }

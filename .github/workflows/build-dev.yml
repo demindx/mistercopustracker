@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - optimize
+      - virtualcam
 
 jobs:
   build:

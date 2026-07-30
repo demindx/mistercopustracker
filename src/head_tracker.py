@@ -1,12 +1,11 @@
-import base64
 import logging
 import threading
 import time
 from dataclasses import dataclass
 
-import cv2
 import numpy as np
 
+from src.camera import CameraCapture
 from src.coordinate_mapper import CoordinateMapper
 from src.face_detector import FaceDetector, ForeheadData
 from src.obs_connector import OBSConnector, SceneItemTransform
@@ -24,6 +23,7 @@ class TrackerConfig:
     rotation_enabled: bool = True
     offset_y: int = 20
     target_fps: float = 30.0
+    camera_index: int = 0
 
 
 class HeadTracker:
@@ -52,6 +52,7 @@ class HeadTracker:
         self._base_scale_x: float | None = None
         self._base_scale_y: float | None = None
         self._saved_transform: SceneItemTransform | None = None
+        self._camera: CameraCapture | None = None
 
     @property
     def is_running(self) -> bool:
@@ -95,12 +96,14 @@ class HeadTracker:
 
         if self._webcam_item_id is None:
             log.warning(
-                "Webcam source '%s' not found in scene '%s' — "
-                "screenshot fetch may fail",
+                "OBS camera source '%s' not found in scene '%s' — "
+                "coordinate mapping may be inaccurate",
                 self.config.camera_source_name,
                 self.config.scene_name,
             )
 
+        log.debug("Opening camera %d", self.config.camera_index)
+        self._camera = CameraCapture(index=self.config.camera_index)
         log.debug("Creating face detector")
         self._detector = FaceDetector()
         self._mapper = CoordinateMapper(
@@ -155,6 +158,11 @@ class HeadTracker:
                 )
 
         self._webcam_transform_cache = None
+
+        if self._camera:
+            self._camera.release()
+            self._camera = None
+
         log.info("Head tracker stopped")
 
     def _resolve_source_ids(self):
@@ -193,23 +201,9 @@ class HeadTracker:
         return transform
 
     def _fetch_frame(self) -> np.ndarray | None:
-        with self._obs_lock:
-            b64_str = self.obs.get_source_screenshot(
-                self.config.camera_source_name
-            )
-        if not b64_str:
+        if self._camera is None:
             return None
-        try:
-            b64_str = b64_str.partition(",")[-1] if "," in b64_str else b64_str
-            data = base64.b64decode(b64_str)
-            arr = np.frombuffer(data, dtype=np.uint8)
-            frame = cv2.imdecode(arr, cv2.IMREAD_COLOR)
-            if frame is None:
-                log.debug("cv2.imdecode returned None")
-            return frame
-        except Exception:
-            log.error("Failed to decode screenshot frame", exc_info=True)
-            return None
+        return self._camera.read()
 
     def _track_loop(self):
         frame_count = 0
@@ -234,13 +228,13 @@ class HeadTracker:
                 consecutive_failures += 1
                 if consecutive_failures == 1:
                     log.warning(
-                        "Cannot fetch screenshot from source '%s' — "
-                        "check OBS connection and camera source name",
-                        self.config.camera_source_name,
+                        "Cannot read frame from camera %d — "
+                        "check that the device is connected and not in use",
+                        self.config.camera_index,
                     )
                 if consecutive_failures >= 10:
                     log.error(
-                        "Screenshot fetch failed %d times consecutively — "
+                        "Camera read failed %d times consecutively — "
                         "stopping tracking loop",
                         consecutive_failures,
                     )

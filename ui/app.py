@@ -9,6 +9,7 @@ import cv2
 
 from nicegui import ui, app
 
+from src.camera import list_cameras
 from src.head_tracker import HeadTracker, TrackerConfig
 from src.obs_connector import OBSConnector
 
@@ -37,6 +38,7 @@ class HeadTimerUI:
         self._scene_select: ui.select | None = None
         self._timer_select: ui.select | None = None
         self._camera_select: ui.select | None = None
+        self._device_camera_select: ui.select | None = None
         self._smoothing_slider: ui.slider | None = None
         self._rotation_checkbox: ui.checkbox | None = None
         self._offset_input: ui.number | None = None
@@ -78,6 +80,7 @@ class HeadTimerUI:
             self.config.rotation_enabled = trk.get("rotation_enabled", True)
             self.config.offset_y = trk.get("offset_y", 20)
             self.config.target_fps = trk.get("target_fps", 30.0)
+            self.config.camera_index = trk.get("camera_index", 0)
 
             log.info(
                 "Config loaded: scene='%s' timer='%s' camera='%s' smoothing=%.2f",
@@ -104,6 +107,7 @@ class HeadTimerUI:
                 "rotation_enabled": self.config.rotation_enabled,
                 "offset_y": self.config.offset_y,
                 "target_fps": self.config.target_fps,
+                "camera_index": self.config.camera_index,
             },
         }
         with open(CONFIG_PATH, "w") as f:
@@ -177,10 +181,16 @@ class HeadTimerUI:
                         on_change=self._on_timer_change,
                     ).classes("w-full")
                     self._camera_select = ui.select(
-                        label="Webcam Source",
+                        label="OBS Camera Source",
                         options=[],
                         on_change=self._on_camera_change,
                     ).classes("w-full")
+                    self._device_camera_select = ui.select(
+                        label="Capture Device",
+                        options={},
+                        on_change=self._on_device_camera_change,
+                    ).classes("w-full")
+                    self._populate_camera_devices()
 
                 with ui.card().classes("w-full"):
                     ui.label("Tracking Settings").classes("text-subtitle1")
@@ -316,6 +326,23 @@ class HeadTimerUI:
     def _on_camera_change(self):
         self.config.camera_source_name = self._camera_select.value or ""
 
+    def _on_device_camera_change(self):
+        val = self._device_camera_select.value
+        self.config.camera_index = int(val) if val is not None else 0
+
+    def _populate_camera_devices(self):
+        devices = list_cameras()
+        if devices:
+            self._device_camera_select.options = devices
+            self._device_camera_select.update()
+            key = str(self.config.camera_index)
+            if key in devices:
+                self._device_camera_select.value = key
+            log.info("Found %d capture devices", len(devices))
+        else:
+            self._device_camera_select.options = {"-1": "No cameras found"}
+            self._device_camera_select.update()
+
     def _start_tracking(self):
         if not self.obs.connected:
             ui.notify("Connect to OBS first", type="warning")
@@ -336,10 +363,11 @@ class HeadTimerUI:
         self.config.target_fps = float(self._target_fps_slider.value)
 
         log.info(
-            "Starting tracking: scene='%s' timer='%s' camera='%s' alpha=%.2f rotation=%s offset=%d fps=%.0f",
+            "Starting tracking: scene='%s' timer='%s' camera='%s' cam_idx=%d alpha=%.2f rotation=%s offset=%d fps=%.0f",
             self.config.scene_name,
             self.config.timer_source_name,
             self.config.camera_source_name,
+            self.config.camera_index,
             self.config.smoothing_alpha,
             self.config.rotation_enabled,
             self.config.offset_y,
@@ -361,6 +389,7 @@ class HeadTimerUI:
         self._scene_select.disable()
         self._timer_select.disable()
         self._camera_select.disable()
+        self._device_camera_select.disable()
         self._smoothing_slider.disable()
         self._rotation_checkbox.disable()
         self._offset_input.disable()
@@ -377,6 +406,7 @@ class HeadTimerUI:
         self._scene_select.enable()
         self._timer_select.enable()
         self._camera_select.enable()
+        self._device_camera_select.enable()
         self._smoothing_slider.enable()
         self._rotation_checkbox.enable()
         self._offset_input.enable()
