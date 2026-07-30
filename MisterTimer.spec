@@ -44,22 +44,28 @@ for candidate in [
             if f.suffix in (".so", ".dll"):
                 dest = str(f.relative_to(_mp_dir.parent))
                 _mp_binaries.append((str(f), dest))
+                _mp_binaries.append((str(f), "."))
                 datas.append((str(f), dest))
-                _mp_dll = f
-                break
-    if _mp_dll:
-        break
+                datas.append((str(f), "."))
+                if not _mp_dll:
+                    _mp_dll = f
+        if _mp_dll:
+            break
 
 if not _mp_dll:
     for f in _mp_dir.rglob("*.dll"):
         dest = str(f.relative_to(_mp_dir.parent))
         _mp_binaries.append((str(f), dest))
+        _mp_binaries.append((str(f), "."))
         datas.append((str(f), dest))
+        datas.append((str(f), "."))
         break
     for f in _mp_dir.rglob("*.so"):
         dest = str(f.relative_to(_mp_dir.parent))
         _mp_binaries.append((str(f), dest))
+        _mp_binaries.append((str(f), "."))
         datas.append((str(f), dest))
+        datas.append((str(f), "."))
         break
 
 _model_dir = Path(SPECPATH) / "models"
@@ -92,7 +98,7 @@ a = Analysis(
     ],
     hookspath=[],
     hooksconfig={},
-    runtime_hooks=[],
+    runtime_hooks=["hooks/runtime.py"],
     excludes=[],
     noarchive=False,
     optimize=0,
