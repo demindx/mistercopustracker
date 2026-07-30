@@ -56,7 +56,7 @@ for _p in _ng_elements.rglob("*"):
             _skipped_libs.append(_lib)
             continue
     datas.append((str(_p), str(Path("nicegui/elements") / _rel.parent)))
-print(f"SPEC: nicegui — пропущено JS-библиотек: {len(set(_skipped_libs))} "
+print(f"SPEC: nicegui — skipped JS libs: {len(set(_skipped_libs))} "
       f"({', '.join(sorted(set(x for x in _skipped_libs if x)))})")
 
 # ------------------------------------------------------------- иконка (2.5 -> ~0.1 МБ)
@@ -107,7 +107,7 @@ if _mp_c.is_dir():
             print(f"SPEC: mediapipe binary {f.name} "
                   f"({f.stat().st_size / 1e6:.1f} MB) -> mediapipe/tasks/c")
 if not _mp_binaries:
-    print("SPEC: WARNING — не найдено ни одной нативной библиотеки mediapipe!")
+    print("SPEC: WARNING — no native mediapipe libraries found!")
 
 # ------------------------------------------------------------------ модель
 
@@ -115,7 +115,7 @@ _model_file = _here / "models" / "face_landmarker.task"
 if _model_file.exists():
     datas.append((str(_model_file), "models"))
 else:
-    print("SPEC: WARNING — models/face_landmarker.task отсутствует")
+    print("SPEC: WARNING — models/face_landmarker.task not found")
 
 # ----------------------------------------------------------------- excludes
 
@@ -201,7 +201,7 @@ def _prune(entries, label):
             continue
         kept.append(entry)
     if dropped:
-        print(f"SPEC: {label} — выкинуто {dropped} файлов, ~{saved / 1e6:.1f} MB")
+        print(f"SPEC: {label} — removed {dropped} files, ~{saved / 1e6:.1f} MB")
     return kept
 
 

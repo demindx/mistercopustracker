@@ -32,6 +32,8 @@ jobs:
 
       - name: Build with PyInstaller
         run: uv run pyinstaller --clean --noconfirm MisterTimer.spec
+        env:
+          PYTHONIOENCODING: utf-8
 
       - name: Create archive
         run: |
