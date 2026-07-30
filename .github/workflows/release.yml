@@ -11,10 +11,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
       - name: Install uv
         uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
 
       - name: Install dependencies
         run: uv sync
@@ -34,7 +36,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: HeadTimerTracker.exe
-          path: dist/HeadTimerTracker/HeadTimerTracker.exe
+          path: dist/HeadTimerTracker/
 
   release:
     needs: build
@@ -46,8 +48,11 @@ jobs:
         with:
           name: HeadTimerTracker.exe
 
+      - name: Zip artifact
+        run: zip -r HeadTimerTracker.zip HeadTimerTracker/
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          files: HeadTimerTracker.exe
+          files: HeadTimerTracker.zip
           generate_release_notes: true
