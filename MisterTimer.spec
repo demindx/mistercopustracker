@@ -1,6 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
 from pathlib import Path
-import mediapipe, nicegui
+import mediapipe, nicegui, sys
 
 _mp_dir = Path(mediapipe.__file__).parent
 _ng_dir = Path(nicegui.__file__).parent
@@ -52,6 +52,14 @@ for candidate in [
                 if not _mp_dll:
                     _mp_dll = f
         if _mp_dll:
+            break
+
+_msvc_names = ["vcruntime140.dll", "vcruntime140_1.dll", "msvcp140.dll"]
+for _name in _msvc_names:
+    for _base in [sys.base_prefix, sys.prefix]:
+        _cand = Path(_base) / _name
+        if _cand.is_file():
+            _mp_binaries.append((str(_cand), _name))
             break
 
 if not _mp_dll:
@@ -117,8 +125,8 @@ exe = EXE(
     name='MisterTimer',
     debug=False,
     bootloader_ignore_signals=False,
-    strip=True,
-    upx=True,
+    strip=False,
+    upx=False,
     console=True,
     disable_windowed_traceback=False,
     argv_emulation=False,
@@ -131,8 +139,7 @@ coll = COLLECT(
     exe,
     a.binaries,
     a.datas,
-    strip=True,
-    upx=True,
-    upx_exclude=['*.dll', '*.so'],
+    strip=False,
+    upx=False,
     name='MisterTimer',
 )
