@@ -48,9 +48,7 @@ for candidate in [
             if f.suffix in (".so", ".dll"):
                 dest = str(f.relative_to(_mp_dir.parent))
                 _mp_binaries.append((str(f), dest))
-                _mp_binaries.append((str(f), "."))
                 datas.append((str(f), dest))
-                datas.append((str(f), "."))
                 if not _mp_dll:
                     _mp_dll = f
         if _mp_dll:
@@ -60,16 +58,12 @@ if not _mp_dll:
     for f in _mp_dir.rglob("*.dll"):
         dest = str(f.relative_to(_mp_dir.parent))
         _mp_binaries.append((str(f), dest))
-        _mp_binaries.append((str(f), "."))
         datas.append((str(f), dest))
-        datas.append((str(f), "."))
         break
     for f in _mp_dir.rglob("*.so"):
         dest = str(f.relative_to(_mp_dir.parent))
         _mp_binaries.append((str(f), dest))
-        _mp_binaries.append((str(f), "."))
         datas.append((str(f), dest))
-        datas.append((str(f), "."))
         break
 
 _model_dir = Path(SPECPATH) / "models"
@@ -103,9 +97,23 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=["hooks/runtime.py"],
-    excludes=[],
+    excludes=[
+        "tkinter",
+        "unittest",
+        "test",
+        "pydoc",
+        "doctest",
+        "email",
+        "html",
+        "http",
+        "xmlrpc",
+        "pdb",
+        "distutils",
+        "setuptools",
+        "pip",
+    ],
     noarchive=False,
-    optimize=0,
+    optimize=2,
 )
 pyz = PYZ(a.pure)
 
@@ -123,7 +131,7 @@ exe = EXE(
     name='MisterTimer',
     debug=False,
     bootloader_ignore_signals=False,
-    strip=False,
+    strip=True,
     upx=True,
     console=True,
     disable_windowed_traceback=False,
@@ -137,7 +145,7 @@ coll = COLLECT(
     exe,
     a.binaries,
     a.datas,
-    strip=False,
+    strip=True,
     upx=True,
     upx_exclude=['*.dll', '*.so'],
     name='MisterTimer',
